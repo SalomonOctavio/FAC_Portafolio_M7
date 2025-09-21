@@ -63,11 +63,12 @@ Set-Location "FAC_Portafolio_M7"
   </modules>
 
   <properties>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <junit.version>5.10.0</junit.version>
     <surefire.version>3.2.5</surefire.version>
+    <mockito.version>5.11.0</mockito.version>
   </properties>
 
   <dependencyManagement>

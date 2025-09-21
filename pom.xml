@@ -3,11 +3,11 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.fac.portafolio</groupId>
-  <artifactId>ms-micropay-parent</artifactId>
+  <groupId>cl.portafolio.m7</groupId>
+  <artifactId>FAC_Portafolio_M7</artifactId>
   <version>1.0.0</version>
   <packaging>pom</packaging>
-  <name>MS MicroPay (parent)</name>
+  <name>FAC Portafolio M7 (parent)</name>
 
   <modules>
     <module>usuarios</module>
@@ -17,10 +17,11 @@
   </modules>
 
   <properties>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <junit.version>5.10.0</junit.version>
+    <surefire.version>3.2.5</surefire.version>
     <mockito.version>5.11.0</mockito.version>
   </properties>
 
