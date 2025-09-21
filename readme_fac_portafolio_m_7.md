@@ -267,3 +267,20 @@ FAC_Portafolio_M7/
 
 Elige una licencia si vas a publicar el proyecto: MIT/Apache-2.0/BSD-3-Clause.
 
+
+---
+
+## 9) Notas para VS Code / IDE
+
+- Si en **Problemas** aparecen advertencias como:
+  - *"The build file has been changed and may need reload to make it effective"*  
+  Da clic en la ampolleta (💡) y selecciona **Reload Project**.  
+  Con eso desaparecen los errores.
+
+- Si aparece un desajuste entre **Java 17** y **Java 21**, ajusta en el `pom.xml` padre:
+  ```xml
+  <maven.compiler.source>21</maven.compiler.source>
+  <maven.compiler.target>21</maven.compiler.target>
+  ```
+
+- Siempre recarga el proyecto en el IDE después de modificar cualquier `pom.xml`.
