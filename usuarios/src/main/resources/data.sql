@@ -1,1 +1,3 @@
-INSERT INTO usuarios (email, nombre) VALUES ('admin@test.com', 'Admin');
+MERGE INTO usuarios (email, nombre) KEY(email)
+VALUES ('admin@test.com', 'Admin');
+
