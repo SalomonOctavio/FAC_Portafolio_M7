@@ -1,4 +1,4 @@
-package cl.portafolio.m7.usuarios.service;
+package cl.portafolio.m7.usuarios;
 
 import cl.portafolio.m7.usuarios.domain.Usuario;
 import cl.portafolio.m7.usuarios.domain.UsuarioRepository;
