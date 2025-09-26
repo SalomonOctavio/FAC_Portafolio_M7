@@ -1,0 +1,28 @@
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:usuariosdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update         # en tests podrías usar create-drop si prefieres
+    defer-datasource-initialization: true  # <- primero crea el esquema, luego corre data.sql
+
+  sql:
+    init:
+      mode: always             # explícito: ejecuta data.sql
+
+  h2:
+    console:
+      enabled: true
+      path: /h2
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
