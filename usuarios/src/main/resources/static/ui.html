@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Panel – Microservicio Usuarios</title>
+  <style>
+    :root { --bg:#0f172a; --panel:#111827; --muted:#334155; --ok:#16a34a; --warn:#f59e0b; --err:#dc2626; --txt:#e5e7eb; --sub:#94a3b8; }
+    html,body{height:100%}
+    body{margin:0; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial; background:var(--bg); color:var(--txt);} 
+    .wrap{max-width:1100px; margin:30px auto; padding:0 16px}
+    .card{background:var(--panel); border:1px solid #1f2937; border-radius:16px; padding:18px; box-shadow:0 10px 30px rgba(0,0,0,.2)}
+    h1{font-size:22px; margin:0 0 10px}
+    h2{font-size:18px; margin:0 0 12px}
+    .grid{display:grid; gap:16px}
+    @media(min-width:900px){.grid{grid-template-columns: 1fr 2fr}}
+    .row{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+    .badge{display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:9999px; font-size:12px; border:1px solid #1f2937}
+    .ok{background:rgba(22,163,74,.15); color:#bbf7d0; border-color:#14532d}
+    .err{background:rgba(220,38,38,.15); color:#fecaca; border-color:#7f1d1d}
+    .muted{color:var(--sub)}
+    label{font-size:12px; color:var(--sub)}
+    input{background:#0b1020; border:1px solid #1f2937; color:var(--txt); padding:10px 12px; border-radius:10px; outline:none; width:100%}
+    input:focus{border-color:#334155}
+    .btn{cursor:pointer; border:none; border-radius:10px; padding:10px 14px; font-weight:600}
+    .btn.primary{background:#2563eb; color:white}
+    .btn.secondary{background:#0b1020; color:#cbd5e1; border:1px solid #1f2937}
+    .btn.danger{background:#ef4444; color:white}
+    .btn:disabled{opacity:.6; cursor:not-allowed}
+    table{width:100%; border-collapse:collapse}
+    th,td{padding:10px 8px; border-bottom:1px solid #1f2937; text-align:left; font-size:14px}
+    th{color:#9ca3af; font-weight:600}
+    .toast{position:fixed; right:16px; bottom:16px; background:#111827; color:#e5e7eb; padding:12px 14px; border-radius:10px; border:1px solid #1f2937; box-shadow:0 12px 30px rgba(0,0,0,.3); min-width:200px}
+    .toast.ok{border-color:#14532d}
+    .toast.err{border-color:#7f1d1d}
+    .foot{margin-top:20px; font-size:12px; color:#94a3b8}
+    .mono{font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap grid">
+    <!-- Panel izquierdo -->
+    <section class="card">
+      <h1>Microservicio: <span class="muted">usuarios</span></h1>
+      <div class="row" style="margin:10px 0 16px">
+        <button class="btn secondary" id="btnHealth">Ver Health</button>
+        <div id="healthBadge" class="badge muted">estado: ¿?</div>
+      </div>
+
+      <h2>Crear / Actualizar</h2>
+      <div class="row">
+        <div style="flex:1 1 120px">
+          <label for="id">ID (solo para actualizar)</label>
+          <input id="id" placeholder="ej: 1" />
+        </div>
+        <div style="flex:1 1 200px">
+          <label for="email">Email</label>
+          <input id="email" placeholder="ana@acme.com" />
+        </div>
+        <div style="flex:1 1 160px">
+          <label for="nombre">Nombre</label>
+          <input id="nombre" placeholder="Ana" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn primary" id="btnCreate">Crear</button>
+        <button class="btn secondary" id="btnUpdate">Actualizar por ID</button>
+        <button class="btn danger" id="btnClear">Limpiar</button>
+      </div>
+
+      <div class="foot">Base URL <span class="mono" id="baseUrlText"></span></div>
+    </section>
+
+    <!-- Panel derecho -->
+    <section class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2>Usuarios</h2>
+        <div class="row">
+          <button class="btn secondary" id="btnRefresh">Refrescar</button>
+        </div>
+      </div>
+      <div style="overflow:auto; max-height:60vh">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:60px">ID</th>
+              <th>Email</th>
+              <th>Nombre</th>
+              <th style="width:220px">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" style="display:none"></div>
+
+  <script>
+    const baseUrl = window.location.origin;
+    document.getElementById('baseUrlText').textContent = baseUrl;
+
+    const $ = (id) => document.getElementById(id);
+    const tbody = $('tbody');
+    const healthBadge = $('healthBadge');
+
+    function toast(msg, ok=true){
+      const t = $('toast');
+      t.textContent = msg; t.className = 'toast ' + (ok? 'ok':'err');
+      t.style.display = 'block';
+      clearTimeout(window.__t);
+      window.__t = setTimeout(()=> t.style.display='none', 3000);
+    }
+
+    function setHealth(status){
+      healthBadge.textContent = 'estado: ' + status;
+      healthBadge.className = 'badge ' + (status==='UP' ? 'ok' : 'err');
+    }
+
+    async function fetchJSON(url, options={}){
+      const res = await fetch(url, { headers: { 'Content-Type':'application/json' }, ...options });
+      const contentType = res.headers.get('content-type')||'';
+      if (!res.ok){
+        let detail = '';
+        if (contentType.includes('application/json')){
+          const data = await res.json().catch(()=>({}));
+          detail = data.message || JSON.stringify(data);
+        } else {
+          detail = await res.text().catch(()=>res.statusText);
+        }
+        throw new Error(res.status + ' ' + res.statusText + (detail? ' – ' + detail: ''));
+      }
+      if (contentType.includes('application/json')) return res.json();
+      return res.text();
+    }
+
+    async function loadHealth(){
+      try{
+        const data = await fetchJSON(baseUrl + '/actuator/health');
+        setHealth(data.status||'UNKNOWN');
+      }catch(e){ setHealth('DOWN'); toast('Health DOWN: '+e.message,false); }
+    }
+
+    function row(u){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${u.id}</td><td>${u.email}</td><td>${u.nombre}</td>
+      <td>
+        <button class="btn secondary" data-act="edit">Editar</button>
+        <button class="btn danger" data-act="del">Eliminar</button>
+      </td>`;
+      tr.querySelector('[data-act="edit"]').onclick = ()=>{
+        $('id').value = u.id; $('email').value = u.email; $('nombre').value = u.nombre; toast('Fila copiada al formulario');
+      };
+      tr.querySelector('[data-act="del"]').onclick = async ()=>{
+        if (!confirm('¿Eliminar usuario #' + u.id + '?')) return;
+        try{ await fetchJSON(baseUrl + '/usuarios/' + u.id, { method:'DELETE' }); toast('Eliminado'); loadUsers(); }
+        catch(e){ toast('Error al eliminar: '+e.message, false); }
+      };
+      return tr;
+    }
+
+    async function loadUsers(){
+      tbody.innerHTML = '<tr><td colspan="4" class="muted">Cargando...</td></tr>';
+      try{
+        const data = await fetchJSON(baseUrl + '/usuarios');
+        tbody.innerHTML = '';
+        if (!data.length){ tbody.innerHTML = '<tr><td colspan="4" class="muted">Sin datos</td></tr>'; return; }
+        data.forEach(u => tbody.appendChild(row(u)));
+      }catch(e){ tbody.innerHTML = '<tr><td colspan="4" class="muted">Error: '+e.message+'</td></tr>'; }
+    }
+
+    async function createUser(){
+      const email = $('email').value.trim();
+      const nombre = $('nombre').value.trim();
+      if (!email || !nombre) return toast('Completa email y nombre', false);
+      try{
+        const u = await fetchJSON(baseUrl + '/usuarios', { method:'POST', body: JSON.stringify({email, nombre}) });
+        toast('Creado #' + u.id);
+        $('id').value=''; $('email').value=''; $('nombre').value='';
+        loadUsers();
+      }catch(e){ toast('Error al crear: '+e.message,false); }
+    }
+
+    async function updateUser(){
+      const id = $('id').value.trim();
+      const email = $('email').value.trim();
+      const nombre = $('nombre').value.trim();
+      if (!id) return toast('Ingresa ID para actualizar', false);
+      if (!email || !nombre) return toast('Completa email y nombre', false);
+      try{
+        await fetchJSON(baseUrl + '/usuarios/' + id, { method:'PUT', body: JSON.stringify({email, nombre}) });
+        toast('Actualizado #' + id);
+        $('id').value=''; $('email').value=''; $('nombre').value='';
+        loadUsers();
+      }catch(e){ toast('Error al actualizar: '+e.message,false); }
+    }
+
+    $('btnHealth').onclick = loadHealth;
+    $('btnRefresh').onclick = loadUsers;
+    $('btnCreate').onclick = createUser;
+    $('btnUpdate').onclick = updateUser;
+    $('btnClear').onclick = ()=>{ $('id').value=''; $('email').value=''; $('nombre').value=''; };
+
+    // Carga inicial
+    loadHealth();
+    loadUsers();
+  </script>
+</body>
+</html>
