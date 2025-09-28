@@ -1,210 +1,126 @@
-# FAC_Portafolio_M7 – Microservicio Usuarios
+# FAC_Portafolio_M7 – Microservicios Usuarios + Inventario + UI
 
-Este repositorio contiene el **microservicio `usuarios`**, desarrollado con Spring Boot, JPA/Hibernate y H2 (modo memoria). Forma parte del portafolio del Módulo 7.
+Este repositorio contiene el **portafolio del Módulo 7**, con dos microservicios desarrollados en Spring Boot y una SPA (Single Page Application) hecha con React + Vite.
 
 ---
 
-## 🚀 Características principales
+## 🚀 Microservicios
+
+### 📌 `usuarios/`
 
 * CRUD de usuarios (con validaciones de email y nombre).
 * Arquitectura en capas: **domain**, **repository**, **service**, **web**.
 * Manejo de excepciones centralizado (`GlobalExceptionHandler`).
-* Tests unitarios y de integración con cobertura JaCoCo.
-* Base de datos **H2 en memoria**, con consola web para inspección.
-* Healthcheck y Actuator para monitoreo.
+* Tests unitarios e integración con JaCoCo (cobertura >80%).
+* Base de datos H2 en memoria (semilla vía `data.sql`).
+
+👉 Puerto: **8081**
 
 ---
 
-## 📂 Estructura del proyecto
+### 📌 `inventario/`
 
-```
-usuarios/
- ├── src/main/java/cl/portafolio/m7/usuarios/
- │   ├── domain/              # Entidad Usuario
- │   ├── repository/          # UsuarioRepository (Spring Data JPA)
- │   ├── service/             # Lógica de negocio + excepciones
- │   └── web/                 # Controllers REST + ExceptionHandler
- │
- ├── src/main/resources/
- │   ├── application.yml      # Configuración (H2, Actuator, JPA)
- │   └── data.sql             # Datos iniciales (semilla)
- │
- ├── src/test/java/cl/portafolio/m7/usuarios/
- │   ├── UsuarioRepositoryTest
- │   ├── UsuarioServiceTest
- │   ├── UsuarioControllerTest
- │   └── UsuarioExtraTest     # Tests adicionales para cobertura
- │
- └── README.md
-```
+* CRUD de productos (atributos: `id`, `sku`, `nombre`, `stock`).
+* Validaciones de stock >= 0 y SKU único.
+* Arquitectura en capas similar a `usuarios`.
+* Manejo centralizado de errores (`GlobalExceptionHandler`).
+* Tests unitarios e integración con JaCoCo (cobertura >85%).
+* Base de datos H2 en memoria (semilla vía `data.sql`).
+
+👉 Puerto: **8082**
 
 ---
 
-## ⚙️ Configuración
+## 🌐 UI (SPA React + Vite)
 
-### application.yml
+La carpeta `ui/` contiene una **Single Page Application** que consume los endpoints REST de los microservicios.  
 
-```yaml
-server:
-  port: 8081
+### 📂 Estructura
 
-spring:
-  datasource:
-    url: jdbc:h2:mem:usuariosdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-
-  jpa:
-    open-in-view: false
-    hibernate:
-      ddl-auto: update
-    defer-datasource-initialization: true
-
-  sql:
-    init:
-      mode: always
-
-  h2:
-    console:
-      enabled: true
-      path: /h2
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
+```
+ui/
+ ├── src/
+ │   ├── api.ts                 # Cliente Axios (usuariosApi, inventarioApi)
+ │   ├── main.tsx               # Router principal
+ │   ├── usuarios/UsuariosPage.tsx
+ │   └── inventario/ProductosPage.tsx
+ ├── .env                       # Configuración de endpoints
+ └── package.json
 ```
 
-### Datos iniciales (`data.sql`)
+### 🔗 Endpoints configurados en `.env`
 
-```sql
-INSERT INTO usuarios (email, nombre) VALUES ('admin@test.com', 'Admin') ON DUPLICATE KEY UPDATE email=email;
+```env
+VITE_API_USUARIOS=http://localhost:8081
+VITE_API_INVENTARIO=http://localhost:8082
 ```
+
+### Funcionalidades actuales
+
+* Listar usuarios y productos.
+* Crear nuevos usuarios y productos.
+* Actualizar y eliminar productos (CRUD completo).
+* Usuarios: crear y listar (pendiente update/delete en UI).
+
+👉 Puerto dev: **5173**
 
 ---
 
-## 🧪 Tests & Cobertura
+## ⚙️ Cómo ejecutar todo
 
-Ejecutar los tests y generar reporte JaCoCo:
-
-```bash
-mvn -pl usuarios clean verify
-```
-
-El reporte queda en:
-
-```
-usuarios/target/site/jacoco/index.html
-```
-
-Cobertura actual:
-
-* `cl.portafolio.m7.usuarios.domain` → **100%**
-* `cl.portafolio.m7.usuarios.repository` → **100%**
-* `cl.portafolio.m7.usuarios.service` → **75%**
-* `cl.portafolio.m7.usuarios.web` → **89%**
-
-Total: **~83%**
-
----
-
-## 🌐 Endpoints principales
-
-### Healthcheck
-
-```bash
-curl -s http://localhost:8081/actuator/health
-```
-
-👉 Respuesta esperada:
-
-```json
-{"status":"UP"}
-```
-
-### CRUD Usuarios
-
-* **POST /usuarios** → Crear un usuario
-* **GET /usuarios/{id}** → Obtener un usuario
-* **GET /usuarios** → Listar todos
-* **PUT /usuarios/{id}** → Actualizar un usuario
-* **DELETE /usuarios/{id}** → Eliminar un usuario
-
-### Ejemplos cURL
-
-🔹 Crear usuario válido:
-
-```bash
-curl -X POST http://localhost:8081/usuarios \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@test.com","nombre":"Test"}'
-```
-
-🔹 Intentar crear usuario inválido (400):
-
-```bash
-curl -X POST http://localhost:8081/usuarios \
-  -H "Content-Type: application/json" \
-  -d '{"email":"no-email","nombre":""}'
-```
-
-🔹 Obtener usuario por ID:
-
-```bash
-curl http://localhost:8081/usuarios/1
-```
-
----
-
-## 💻 Consola H2
-
-Acceso a la consola web:
-
-```
-http://localhost:8081/h2
-```
-
-Configuración de conexión:
-
-* **JDBC URL**: `jdbc:h2:mem:usuariosdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE`
-* **User**: `sa`
-* **Password**: *(vacío)*
-
-Ejemplo query:
-
-```sql
-SELECT * FROM usuarios;
-```
-
----
-
-## 🚀 Arranque manual
-
-Levantar el microservicio:
+### 1. Levantar backends
 
 ```bash
 mvn -pl usuarios spring-boot:run
+mvn -pl inventario spring-boot:run
 ```
 
-Acceder a:
+### 2. Levantar UI
 
-* API: [http://localhost:8081/usuarios](http://localhost:8081/usuarios)
-* Healthcheck: [http://localhost:8081/actuator/health](http://localhost:8081/actuator/health)
-* H2 Console: [http://localhost:8081/h2](http://localhost:8081/h2)
+```bash
+cd ui
+npm install
+npm run dev
+```
+
+### 3. Acceder
+
+* Usuarios API → [http://localhost:8081/usuarios](http://localhost:8081/usuarios)  
+* Inventario API → [http://localhost:8082/productos](http://localhost:8082/productos)  
+* UI → [http://localhost:5173](http://localhost:5173)  
+
+---
+
+## 🧪 Tests y cobertura
+
+### Ejecutar con Maven
+
+```bash
+mvn -pl usuarios clean verify
+mvn -pl inventario clean verify
+```
+
+### Reportes JaCoCo
+
+* `usuarios/target/site/jacoco/index.html`
+* `inventario/target/site/jacoco/index.html`
 
 ---
 
 ## 📌 Pendientes / Mejoras futuras
 
-* Subir cobertura en `service` al 90%+.
-* Añadir Swagger/OpenAPI para documentación.
-* Integración con otros microservicios del portafolio.
+* **Usuarios UI**: implementar update/delete.
+* Añadir **Swagger/OpenAPI** para documentación automática.
+* Subir cobertura de `service` >90%.
+* Dockerizar microservicios y SPA.
+* CI/CD básico con GitHub Actions.
 
 ---
 
 ## ✅ Estado actual
 
+* Usuarios e Inventario levantan correctamente con datos semilla.
+* UI lista y conectada a backends.
+* CRUD completo en Productos, parcial en Usuarios.
 * Código estable, todos los tests pasan.
-* Cobertura JaCoCo generada correctamente.
-* Datos semilla cargados en H2.
-* Listo para commit final y despliegue local.
+* Cobertura JaCoCo >80%.
